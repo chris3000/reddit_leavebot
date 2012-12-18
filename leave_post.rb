@@ -1,12 +1,18 @@
 require 'rubygems'
 require 'data_mapper' # requires all the gems listed above
 
-title= result['data']['title']
-subreddit = result['data']['subreddit']
-post_id = result['data']['id']
-over_18 = result['data']['over_18']
-thumbnail = result['data']['thumbnail']
-permalink = result['data']['permalink']
-url = result['data']['url']
-author = result['data']['author']
-score = result['data']['score']
+class Post
+  include DataMapper::Resource
+
+  property :id,         Serial    # An auto-increment integer key
+  property :title, String
+  property :subreddit, String
+  property :post_id, String #unique?
+  property :over_18, Boolean
+  property :thumbnail, String
+  property :permalink, String
+  property :url, String
+  property :author, String
+  property :score, Integer
+  property :created_at, DateTime  # A DateTime, for any date you might like.
+end
