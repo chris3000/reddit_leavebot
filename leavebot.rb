@@ -11,6 +11,7 @@ require_relative 'leave_post.rb'
 require 'logger'
 this_path = File.expand_path(File.dirname(__FILE__))
 log_path = File.join(this_path,'logs/leavebot_scrape.log')
+
 logger = Logger.new(log_path, 'daily')
 logger.level = Logger::INFO
 # A MySQL connection:

@@ -11,7 +11,7 @@ require_relative 'allow_post.rb'
 #set up logger
 require 'logger'
 this_path = File.expand_path(File.dirname(__FILE__))
-log_path = File.join(this_path,'logs/leavebot_scrape.log')
+log_path = File.join(this_path,'logs/leavebot_post.log')
 logger = Logger.new(log_path, 'weekly')
 logger.level = Logger::INFO
 #parse out the comments url and the thing_id from a very convoluted JSON object that gets returned from reddit
@@ -94,6 +94,7 @@ if (url && next_post.title && next_post.subreddit)
       if comment_id
         sleep 2
         reddit.distinguish comment_id, :yes
+        logger.info "successfully posted #{reply_json}"
       else
         logger.error "distinguish not set because comment_id was not parsed"
       end
