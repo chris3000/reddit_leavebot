@@ -1,1 +1,5 @@
-This file was created by JetBrains RubyMine (Enoki) RM-124.67 for binding GitHub repository
+People are always leaving things around reddit.  The leavebot3000 collects these things and puts them in one place - /r/illjustleavethishere.
+
+leavebot.rb scrapes Reddit for the phrase "I'll just leave this here" and puts the findings in a MySQL database.
+
+leavebot_post.rb will post one of the findings to reddit.com/r/illjustleavethishere and will add appropriate commentary to the comments section.
