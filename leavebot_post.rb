@@ -8,7 +8,12 @@ require  'dm-migrations'
 require 'snoo'
 require_relative 'leave_post.rb'
 require_relative 'allow_post.rb'
-
+#set up logger
+require 'logger'
+this_path = File.expand_path(File.dirname(__FILE__))
+log_path = File.join(this_path,'logs/leavebot_scrape.log')
+logger = Logger.new(log_path, 'weekly')
+logger.level = Logger::INFO
 #parse out the comments url and the thing_id from a very convoluted JSON object that gets returned from reddit
 
 #fix snoo to send api_type: json on comments
@@ -22,18 +27,18 @@ module Snoo
 end
 
 def parse_errors rep_json
-  puts "Got some errors from Reddit on submission:"
+  logger.error "Got some errors from Reddit on submission:"
   if reply_json['ratelimit']
     #do something to halt posting
     wait_seconds = rep_json['ratelimit']
-    puts "I need to wait #{wait_seconds} seconds until I can post again"
+    logger.error "I need to wait #{wait_seconds} seconds until I can post again"
     next_allowed_post.next_post = Time.now + wait_seconds
     next_allowed_post.save
   end
   rep_json['errors'].each do |error|
     error_type = error[0]
     error_msg = error[1]
-    puts "Error Type: #{error_type}, '#{error_msg}'"
+    logger.error "Error Type: #{error_type}, '#{error_msg}'"
     if error_type.downcase.include? "QUOTA"
       #set for 1 hour
       next_allowed_post.next_post = Time.now + 600
@@ -56,7 +61,7 @@ reddit = Snoo::Client.new(reddit_conf['url'], reddit_conf['user_agent'])
 next_allowed_post = AllowPost.first_or_create({},{:next_post => (Time.now-10)})
 if next_allowed_post.next_post > Time.now
   pause_sec = (next_allowed_post - Time.now).to_i
-  puts "pausing #{pause_sec} seconds"
+  logger.warn "pausing #{pause_sec} seconds"
   sleep pause_sec if pause_sec > 0
 end
 
@@ -72,29 +77,25 @@ url = next_post.url
 post_success = false
 if (url && next_post.title && next_post.subreddit)
   reply = reddit.submit title, "illjustleavethishere", {:url => url, :api_type => "json"}
+  logger.debug "submission reply: #{reply}"
   reply_json = reply.parsed_response['json']
-
-  #puts "got reply: #{reply.parsed_response['jquery']}"
-  #comments_id = parse_reply reply.parsed_response['jquery']
-  #puts title +"  "+url
   if reply_json['errors'].empty? #it succeeded!
     post_success = true
     submit_name = reply_json['data']['name']
     sleep 2
     comment_md = "Originally submitted [here](#{next_post.permalink}) by user [#{next_post.author}](/u/#{next_post.author})."
-    #puts "posting comment to #{submit_name}"
     comment_reply = reddit.comment comment_md, submit_name
-    puts "here's the reply from reddit on comment submission..."
-    puts comment_reply
+    logger.debug "here's the reply from reddit on comment submission..."
+    logger.debug comment_reply
     comment_reply_json = comment_reply.parsed_response['json']
     if comment_reply_json['errors'].empty?  #comment posting was successful!
       comment_id = comment_reply_json['data']['things'][0]['data']['id']
-      puts comment_id
+      logger.debug "comment_id = #{comment_id}"
       if comment_id
         sleep 2
         reddit.distinguish comment_id, :yes
       else
-        puts "distinguish not set"
+        logger.error "distinguish not set because comment_id was not parsed"
       end
 
     else #comment errors!
@@ -103,7 +104,6 @@ if (url && next_post.title && next_post.subreddit)
   else  #errors!
     parse_errors reply_json
   end
-  puts reply
 end
 if post_success
   next_post.posted = true
